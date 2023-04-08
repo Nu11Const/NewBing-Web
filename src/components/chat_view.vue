@@ -9,7 +9,7 @@
     </a-list>
     <a-comment>
         <template #avatar>
-            <a-avatar src="/user.png" alt="User" />
+            <a-avatar src="/assets/user.png" alt="User" />
         </template>
         <template #content>
             <a-form-item>
