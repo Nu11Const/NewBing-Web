@@ -1,80 +1,72 @@
-# 导入所需的库
 import asyncio
-from fastapi import FastAPI, WebSocket
+from fastapi import FastAPI, Request, WebSocket
 from fastapi.responses import HTMLResponse
 from EdgeGPT import Chatbot, ConversationStyle
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 
-# 创建一个fastapi应用
+import json
 app = FastAPI()
+bot_list = []
+app.mount("/assets", StaticFiles(directory="assets"), name="assets")
 
-# 创建一个edgegpt聊天机器人对象
-bot = Chatbot(cookiePath="cookie.json")
+# 创建Jinja2模板实例
+templates = Jinja2Templates(directory="templates")
+@app.get("/")
+def index(request: Request):
+    # 渲染index.html模板，传入request参数
+    return templates.TemplateResponse("index.html", {"request": request})
 
-# 定义一个websocket路由
 @app.websocket("/api/ws")
 async def websocket_endpoint(websocket: WebSocket):
-    # 接受websocket连接请求
     await websocket.accept()
-    # 循环接收和发送消息
     while True:
-        # 接收用户发送的消息
-        data = await websocket.receive_text()
-        # 调用edgegpt的API并获取回复消息
-        response = await bot.ask(prompt=data, conversation_style=ConversationStyle.balanced)
-        # 发送回复消息给用户
-        await websocket.send_text(response["item"][
-                    "messages"
-                ][1]["adaptiveCards"][0]["body"][0]["text"])
+        data_raw = await websocket.receive_text()
+        data = json.loads(data_raw)
+        print(data)
+        id = data["id"]
+        if (bot_list[id]["style"] == "balanced"):
+            style = ConversationStyle.balanced
+        elif(bot_list[id]["style"] == "creative"):
+            style = ConversationStyle.creative
+        elif(bot_list[id]["style"] == "precise"):
+            style = ConversationStyle.precise
+        response = await bot_list[id]["bot"].ask(prompt=data["message"],conversation_style=style)
+        if(len(response["item"]["messages"]) == 0):
+            await websocket.send_text("被Bing拦截")
+        else:
+            await websocket.send_text(response["item"]["messages"][1]["adaptiveCards"][0]["body"][0]["text"])
+        
+        
+        
+@app.post("/api/newchat")
+async def newchat(jsonData: dict):
+    id = len(bot_list)
+    print(jsonData)
+    bot_list.append({
+        "id": id,
+        "style": jsonData["style"],
+        "bot": None,
+        "cookie": jsonData["cookie"]
+    })
+    if not(jsonData["cookie"] == str):
+        temp = jsonData["cookie"]
+        jsonData["cookie"] = json.loads(temp)
+    bot_list[id]["bot"] = Chatbot(cookies=jsonData["cookie"])
+    print(jsonData["cookie"])
+    return bot_list[id]
 
-# 定义一个HTML模板来显示聊天界面，这里只是简单地使用了一些基本的HTML和JavaScript代码，你可以根据你的喜好进行美化和改进。
-html = """
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Chat with EdgeGPT</title>
-</head>
-<body>
-    <h1>Chat with EdgeGPT</h1>
-    <div id="chatbox" style="width: 600px; height: 400px; border: 1px solid black; overflow-y: scroll;"></div>
-    <form id="form" action="#" onsubmit="sendMessage(event)">
-        <input id="input" type="text" autocomplete="off"/>
-        <button type="submit">Send</button>
-    </form>
-    <script>
-        // 创建一个websocket对象，连接到后端的websocket路由
-        var ws = new WebSocket("ws://localhost:8000/ws");
-        
-        // 定义一个函数，用于在聊天框中显示消息，并滚动到最底部
-        function showMessage(message) {
-            var chatbox = document.getElementById("chatbox");
-            chatbox.innerHTML += message + "<br>";
-            chatbox.scrollTop = chatbox.scrollHeight;
-        }
-        
-        // 当websocket连接成功时，显示一条欢迎消息，并清空输入框中的内容（如果有）
-        ws.onopen = function(event) {
-            showMessage("Welcome to chat with EdgeGPT!");
-            document.getElementById("input").value = "";
-        };
-        
-        // 当websocket接收到后端发送的消息时，显示一条带有EdgeGPT标签的消息，并清空输入框中的内容（如果有）
-        ws.onmessage = function(event) {
-            showMessage("<b>EdgeGPT:</b> " + event.data);
-            document.getElementById("input").value = "";
-        };
-        
-        // 当表单提交时，阻止默认行为（刷新页面），获取输入框中的内容（如果不为空），并通过websocket发送给后端，并显示一条带有User标签的消息。
-        function sendMessage(event) {
-            event.preventDefault();
-            var input = document.getElementById("input");
-            var message = input.value;
-            if (message) {
-                ws.send(message);
-                showMessage("<b>User:</b> " + message);
-            }
-            
-        }
-    </script>
-</body>
-</html>
-"""
+@app.get("/api/get")
+async def get(jsonData: dict):
+    id = jsonData["id"]
+    return bot_list[id]
+
+@app.post("/api/change_style")
+async def change_style(jsonData:dict):
+    response = {"message": "successful","code":"200"}
+    try:
+        bot_list[jsonData["id"]]["style"] = jsonData["style"]
+    except Exception as err:
+        response["message"] = err
+        response["code"] = "500"
+    return response
