@@ -24,14 +24,12 @@ declare module '@vue/runtime-core' {
     AListItem: typeof import('ant-design-vue/es')['ListItem']
     AMenu: typeof import('ant-design-vue/es')['Menu']
     AMenuItem: typeof import('ant-design-vue/es')['MenuItem']
-    ASubMenu: typeof import('ant-design-vue/es')['SubMenu']
+    AModal: typeof import('ant-design-vue/es')['Modal']
+    ASpin: typeof import('ant-design-vue/es')['Spin']
     ATextarea: typeof import('ant-design-vue/es')['Textarea']
-    ATooltip: typeof import('ant-design-vue/es')['Tooltip']
     Chat: typeof import('./src/components/chat.vue')['default']
     Chat_view: typeof import('./src/components/chat_view.vue')['default']
-    HelloWorld: typeof import('./src/components/HelloWorld.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
-    Submit: typeof import('./src/components/submit.vue')['default']
   }
 }
