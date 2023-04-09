@@ -4,3 +4,4 @@
 请前往[NewBing-Web](https://github.com/VMTask/NewBing-Web)项目，安装requirements.txt内的包后直接运行`App.py`
 # 致谢
 - 感谢[EdgeGPT](https://github.com/acheong08/EdgeGPT)提供终端访问New Bing Chat的方案
+# Publish

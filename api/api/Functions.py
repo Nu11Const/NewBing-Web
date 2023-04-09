@@ -4,7 +4,7 @@ from fastapi.responses import HTMLResponse
 from EdgeGPT import Chatbot, ConversationStyle
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-
+import time
 import json
 app = FastAPI()
 bot_list = []
@@ -31,11 +31,12 @@ async def websocket_endpoint(websocket: WebSocket):
             style = ConversationStyle.creative
         elif(bot_list[id]["style"] == "precise"):
             style = ConversationStyle.precise
-        response = await bot_list[id]["bot"].ask(prompt=data["message"],conversation_style=style)
-        if(len(response["item"]["messages"]) == 0):
-            await websocket.send_text("被Bing拦截")
-        else:
-            await websocket.send_text(response["item"]["messages"][1]["adaptiveCards"][0]["body"][0]["text"])
+        time.sleep(1)
+        await websocket.send_text("Websocket OK")
+        async for final,response in bot_list[id]["bot"].ask_stream(prompt=data["message"],conversation_style=style):
+            if not final:
+                await websocket.send_text(response)
+            
         
         
         
