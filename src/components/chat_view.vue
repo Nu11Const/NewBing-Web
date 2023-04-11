@@ -53,7 +53,13 @@ import relativeTime from 'dayjs/plugin/relativeTime';
 dayjs.extend(relativeTime);
 import MdEditor from 'md-editor-v3';
 import 'md-editor-v3/lib/style.css';
-var ws = new WebSocket("wss://sydney.vmtask.icu/api/ws");
+let location = window.location.host
+if(window.location.protocol == "https:"){
+	let protocol = "wss://"
+}else{
+	let protocol = "ws://"
+}
+var ws = new WebSocket(`${protocol}${location}/api/ws`);
 type Comment = Record<string, string>;
 import { message } from 'ant-design-vue';
 import "ant-design-vue/es/message/style/css"
