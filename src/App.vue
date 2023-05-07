@@ -1,6 +1,6 @@
 <template>
   <a-layout style="min-height: 100vh">
-    <a-layout-sider v-model:collapsed="collapsed" collapsible>
+    <a-layout-sider breakpoint="lg" collapsed-width="0" @collapse="onCollapse" @breakpoint="onBreakpoint">
       <div class="logo"></div>
       <a-menu v-model:selectedKeys="selectedKeys" theme="dark" mode="inline">
         <a-menu-item key="/">
@@ -23,16 +23,37 @@ import {
   HomeOutlined
 } from '@ant-design/icons-vue';
 import { defineComponent, ref } from 'vue';
+import { Breadcrumb, BreadcrumbItem, LayoutContent, Menu, MenuItem, Layout, LayoutFooter, LayoutHeader, LayoutSider } from 'ant-design-vue'
 export default defineComponent({
   components: {
-    HomeOutlined
+    HomeOutlined,
+    BreadcrumbItem,
+    ALayout: Layout,
+    ALayoutContent: LayoutContent,
+    ALayoutFooter: LayoutFooter,
+    ALayoutHeader: LayoutHeader,
+    ALayoutSider: LayoutSider,
+    AMenu: Menu,
+    AMenuItem: MenuItem,
+    ABreadcrumbItem: BreadcrumbItem,
+    ABreadcrumb: Breadcrumb
   },
-  data() {
-    return {
-      collapsed: ref<boolean>(false),
-      selectedKeys: ref<string[]>(['1']),
+  setup() {
+    const onCollapse = (collapsed: boolean, type: string) => {
+      console.log(collapsed, type);
     };
-  },
+
+    const onBreakpoint = (broken: boolean) => {
+      console.log(broken);
+    };
+
+    const selectedKeys = ref<string[]>(['/']);
+    return {
+      onCollapse,
+      onBreakpoint,
+      selectedKeys
+    }
+  }
 });
 </script>
 <style>
@@ -45,9 +66,8 @@ export default defineComponent({
 .site-layout .site-layout-background {
   background: #fff;
 }
+
 [data-theme='dark'] .site-layout .site-layout-background {
   background: #141414;
 }
-
-
 </style>

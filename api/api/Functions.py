@@ -1,5 +1,5 @@
 import asyncio
-from fastapi import FastAPI, Request, WebSocket
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from EdgeGPT import Chatbot, ConversationStyle
 from fastapi.staticfiles import StaticFiles
@@ -20,22 +20,25 @@ def index(request: Request):
 @app.websocket("/api/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
-    while True:
-        data_raw = await websocket.receive_text()
-        data = json.loads(data_raw)
-        print(data)
-        id = data["id"]
-        if (bot_list[id]["style"] == "balanced"):
-            style = ConversationStyle.balanced
-        elif(bot_list[id]["style"] == "creative"):
-            style = ConversationStyle.creative
-        elif(bot_list[id]["style"] == "precise"):
-            style = ConversationStyle.precise
-        time.sleep(1)
-        await websocket.send_text("Websocket OK")
-        async for final,response in bot_list[id]["bot"].ask_stream(prompt=data["message"],conversation_style=style):
-            if not final:
-                await websocket.send_text(response)
+    try:
+        while True:
+            data_raw = await websocket.receive_text()
+            data = json.loads(data_raw)
+            print(data)
+            id = data["id"]
+            if (bot_list[id]["style"] == "balanced"):
+                style = ConversationStyle.balanced
+            elif(bot_list[id]["style"] == "creative"):
+                style = ConversationStyle.creative
+            elif(bot_list[id]["style"] == "precise"):
+                style = ConversationStyle.precise
+            time.sleep(1)
+            await websocket.send_text("Websocket OK")
+            async for final,response in bot_list[id]["bot"].ask_stream(prompt=data["message"],conversation_style=style):
+                if not final:
+                    await websocket.send_text(response)
+    except WebSocketDisconnect:
+        pass
             
         
         
@@ -50,7 +53,7 @@ async def newchat(jsonData: dict):
         "bot": None,
         "cookie": jsonData["cookie"]
     })
-    if not(jsonData["cookie"] == str):
+    if(isinstance(jsonData["cookie"],str)):
         temp = jsonData["cookie"]
         jsonData["cookie"] = json.loads(temp)
     bot_list[id]["bot"] = Chatbot(cookies=jsonData["cookie"])
